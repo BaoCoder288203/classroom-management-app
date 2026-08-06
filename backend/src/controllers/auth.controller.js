@@ -1,5 +1,6 @@
 const { db } = require("../config/firebase");
 const { sendSMS } = require("../services/infobip.service");
+const { generateToken } = require("../services/jwt.service");
 
 function toE164(phoneNumber) {
   let phone = phoneNumber.trim().replace(/\s+/g, "");
@@ -61,6 +62,7 @@ async function createAccessCode(req, res) {
       await usersRef.add({
         phoneNumber: formattedPhone,
         accessCode: code,
+        role: "student",
         createdAt: new Date(),
       });
     } else {
@@ -85,4 +87,73 @@ async function createAccessCode(req, res) {
   }
 }
 
-module.exports = { createAccessCode };
+async function validateAccessCode(req, res) {
+  try {
+    const { phoneNumber, accessCode } = req.body;
+
+    if (!isValidPhone(phoneNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: "Số điện thoại không hợp lệ",
+      });
+    }
+
+    if (!accessCode || String(accessCode).trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Mã truy cập không được để trống",
+      });
+    }
+
+    const formattedPhone = toE164(phoneNumber);
+
+    const usersRef = db.collection("users");
+    const snapshot = await usersRef
+      .where("phoneNumber", "==", formattedPhone)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy người dùng",
+      });
+    }
+
+    const userDoc = snapshot.docs[0];
+    const userData = userDoc.data();
+    const savedCode = userData.accessCode ? String(userData.accessCode) : "";
+
+    if (!savedCode || savedCode !== String(accessCode).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Mã không đúng",
+      });
+    }
+
+    await userDoc.ref.update({
+      accessCode: "",
+    });
+
+    const role = userData.role || "student";
+
+    const token = generateToken({
+      phone: formattedPhone,
+      role: role,
+    });
+
+    return res.status(200).json({
+      success: true,
+      token: token,
+      role: role,
+    });
+  } catch (error) {
+    console.log("validateAccessCode error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
+module.exports = { createAccessCode, validateAccessCode };
