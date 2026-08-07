@@ -17,6 +17,17 @@ function normalizeEmail(email) {
   return String(email).trim().toLowerCase();
 }
 
+async function findStudentByEmail(email) {
+  const snapshot = await db
+    .collection("students")
+    .where("email", "==", normalizeEmail(email))
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return null;
+  return snapshot.docs[0];
+}
+
 async function loginEmail(req, res) {
   try {
     const { email } = req.body;
@@ -234,4 +245,181 @@ async function setupAccount(req, res) {
   }
 }
 
-module.exports = { loginEmail, validateAccessCode, setupAccount };
+async function getMyLessons(req, res) {
+  try {
+    const email = req.user?.email;
+    if (!email) {
+      return res.status(401).json({
+        success: false,
+        message: "Chưa xác thực",
+      });
+    }
+
+    const studentDoc = await findStudentByEmail(email);
+    if (!studentDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy học viên",
+      });
+    }
+
+    const phone = String(studentDoc.data().phone || "").trim();
+    const lessonsSnap = await db
+      .collection("lessons")
+      .where("assignedTo", "==", phone)
+      .get();
+
+    const lessons = lessonsSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      lessons,
+    });
+  } catch (error) {
+    console.log("getMyLessons error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
+async function markLessonDone(req, res) {
+  try {
+    const email = req.user?.email;
+    if (!email) {
+      return res.status(401).json({
+        success: false,
+        message: "Chưa xác thực",
+      });
+    }
+
+    const { lessonId } = req.body;
+    if (!lessonId || String(lessonId).trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu lessonId",
+      });
+    }
+
+    const studentDoc = await findStudentByEmail(email);
+    if (!studentDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy học viên",
+      });
+    }
+
+    const phone = String(studentDoc.data().phone || "").trim();
+    const lessonRef = db.collection("lessons").doc(String(lessonId).trim());
+    const lessonSnap = await lessonRef.get();
+
+    if (!lessonSnap.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy lesson",
+      });
+    }
+
+    const lessonData = lessonSnap.data();
+    if (String(lessonData.assignedTo || "").trim() !== phone) {
+      return res.status(403).json({
+        success: false,
+        message: "Không có quyền",
+      });
+    }
+
+    await lessonRef.update({ status: "done" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Đã đánh dấu hoàn thành",
+    });
+  } catch (error) {
+    console.log("markLessonDone error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
+async function editProfile(req, res) {
+  try {
+    const currentEmail = req.user?.email;
+    if (!currentEmail) {
+      return res.status(401).json({
+        success: false,
+        message: "Chưa xác thực",
+      });
+    }
+
+    if (req.body.email !== undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Không được đổi email",
+      });
+    }
+
+    const { name, username } = req.body;
+    const updates = {};
+
+    if (name !== undefined && name !== null && String(name).trim() !== "") {
+      updates.name = String(name).trim();
+    }
+
+    if (
+      username !== undefined &&
+      username !== null &&
+      String(username).trim() !== ""
+    ) {
+      if (String(username).trim().length < 3) {
+        return res.status(400).json({
+          success: false,
+          message: "Username phải có ít nhất 3 ký tự",
+        });
+      }
+      updates.username = String(username).trim();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Không có thông tin cần cập nhật",
+      });
+    }
+
+    const studentDoc = await findStudentByEmail(currentEmail);
+    if (!studentDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy học viên",
+      });
+    }
+
+    await studentDoc.ref.update(updates);
+
+    return res.status(200).json({
+      success: true,
+      message: "Đã cập nhật hồ sơ",
+    });
+  } catch (error) {
+    console.log("editProfile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
+module.exports = {
+  loginEmail,
+  validateAccessCode,
+  setupAccount,
+  getMyLessons,
+  markLessonDone,
+  editProfile,
+};
