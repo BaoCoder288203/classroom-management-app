@@ -17,7 +17,7 @@ function Login() {
     if (user.role === "instructor") {
       navigate("/instructor/students", { replace: true });
     } else if (user.role === "student") {
-      navigate("/student/messages", { replace: true });
+      navigate("/student/lessons", { replace: true });
     }
   }, [user, navigate]);
 
@@ -72,13 +72,13 @@ function Login() {
             phoneNumber: identifier,
             accessCode,
           });
-          const { token, role } = res.data;
+          const { token, role, phone } = res.data;
           const finalRole = role || "instructor";
-          login(token, finalRole, identifier);
+          login(token, finalRole, phone || identifier);
           navigate(
             finalRole === "instructor"
               ? "/instructor/students"
-              : "/student/messages"
+              : "/student/lessons"
           );
         }}
         onResend={async () => {
@@ -111,7 +111,7 @@ function Login() {
         login(token, finalRole, identifier);
         navigate(
           finalRole === "student"
-            ? "/student/messages"
+            ? "/student/lessons"
             : "/instructor/students"
         );
       }}

@@ -14,7 +14,12 @@ function Sidebar({ items }) {
             `sidebar-item ${isActive ? "active" : ""}`
           }
         >
-          {item.label}
+          <span>{item.label}</span>
+          {item.badge > 0 && (
+            <span className="nav-badge">
+              {item.badge > 99 ? "99+" : item.badge}
+            </span>
+          )}
         </NavLink>
       ))}
     </div>

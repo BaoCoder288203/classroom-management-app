@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/client";
 import ChatLayout from "../../components/ChatLayout";
+import { normalizeId } from "../../socket";
 
 function InstructorMessages() {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ function InstructorMessages() {
       try {
         const res = await api.get("/api/instructor/students");
         const list = (res.data.students || []).map((s) => ({
-          id: s.email,
+          id: normalizeId(s.email),
           name: s.name || s.email,
           lastMessage: s.email,
         }));
@@ -26,7 +27,7 @@ function InstructorMessages() {
 
   return (
     <ChatLayout
-      myId={user?.identifier}
+      myId={normalizeId(user?.identifier)}
       myRole="instructor"
       conversations={conversations}
       title="All Message"

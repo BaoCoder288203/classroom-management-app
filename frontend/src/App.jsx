@@ -10,6 +10,7 @@ import InstructorMessages from "./pages/instructor/InstructorMessages";
 import StudentLayout from "./pages/student/StudentLayout";
 import StudentLessons from "./pages/student/StudentLessons";
 import StudentMessages from "./pages/student/StudentMessages";
+import StudentProfile from "./pages/student/StudentProfile";
 
 function App() {
   return (
@@ -41,9 +42,10 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="messages" replace />} />
+            <Route index element={<Navigate to="lessons" replace />} />
             <Route path="lessons" element={<StudentLessons />} />
             <Route path="messages" element={<StudentMessages />} />
+            <Route path="profile" element={<StudentProfile />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />

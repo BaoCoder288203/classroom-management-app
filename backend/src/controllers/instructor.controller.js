@@ -353,6 +353,33 @@ async function assignLesson(req, res) {
   }
 }
 
+async function getLessons(req, res) {
+  try {
+    const snap = await db.collection("lessons").get();
+    const lessons = snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    lessons.sort((a, b) => {
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate() : a.createdAt;
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate() : b.createdAt;
+      return new Date(tb || 0) - new Date(ta || 0);
+    });
+
+    return res.status(200).json({
+      success: true,
+      lessons,
+    });
+  } catch (error) {
+    console.log("getLessons error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
 module.exports = {
   addStudent,
   getStudents,
@@ -360,4 +387,5 @@ module.exports = {
   editStudent,
   deleteStudent,
   assignLesson,
+  getLessons,
 };
