@@ -1,16 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const { addStudent } = require("../controllers/instructor.controller");
+const {
+  addStudent,
+  getStudents,
+  getStudentByPhone,
+  editStudent,
+  deleteStudent,
+  assignLesson,
+} = require("../controllers/instructor.controller");
 const {
   verifyToken,
   requireRole,
 } = require("../middleware/auth.middleware");
 
-router.post(
-  "/addStudent",
-  verifyToken,
-  requireRole("instructor"),
-  addStudent
-);
+// tat ca route instructor can JWT + role instructor
+router.use(verifyToken, requireRole("instructor"));
+
+router.post("/addStudent", addStudent);
+router.get("/students", getStudents);
+router.get("/student/:phone", getStudentByPhone);
+router.put("/editStudent/:phone", editStudent);
+router.delete("/student/:phone", deleteStudent);
+router.post("/assignLesson", assignLesson);
 
 module.exports = router;
