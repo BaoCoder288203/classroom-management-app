@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
+  const { user, login } = useAuth();
 
   const [mode, setMode] = useState("instructor");
   const [step, setStep] = useState("input");
@@ -15,6 +17,15 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === "instructor") {
+      navigate("/instructor", { replace: true });
+    } else if (user.role === "student") {
+      navigate("/student", { replace: true });
+    }
+  }, [user, navigate]);
 
   function switchMode(nextMode) {
     setMode(nextMode);
@@ -93,10 +104,12 @@ function Login() {
       }
 
       const { token, role } = res.data;
-      const finalRole = role || (mode === "instructor" ? "instructor" : "student");
+      const finalRole =
+        role || (mode === "instructor" ? "instructor" : "student");
+      const identifier =
+        mode === "instructor" ? phoneNumber.trim() : email.trim();
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", finalRole);
+      login(token, finalRole, identifier);
 
       if (finalRole === "instructor") {
         navigate("/instructor");
