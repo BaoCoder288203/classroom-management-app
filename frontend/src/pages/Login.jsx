@@ -15,9 +15,9 @@ function Login() {
   useEffect(() => {
     if (!user) return;
     if (user.role === "instructor") {
-      navigate("/instructor", { replace: true });
+      navigate("/instructor/students", { replace: true });
     } else if (user.role === "student") {
-      navigate("/student", { replace: true });
+      navigate("/student/messages", { replace: true });
     }
   }, [user, navigate]);
 
@@ -75,7 +75,11 @@ function Login() {
           const { token, role } = res.data;
           const finalRole = role || "instructor";
           login(token, finalRole, identifier);
-          navigate(finalRole === "instructor" ? "/instructor" : "/student");
+          navigate(
+            finalRole === "instructor"
+              ? "/instructor/students"
+              : "/student/messages"
+          );
         }}
         onResend={async () => {
           await api.post("/api/auth/createAccessCode", {
@@ -105,7 +109,11 @@ function Login() {
         const { token, role } = res.data;
         const finalRole = role || "student";
         login(token, finalRole, identifier);
-        navigate(finalRole === "student" ? "/student" : "/instructor");
+        navigate(
+          finalRole === "student"
+            ? "/student/messages"
+            : "/instructor/students"
+        );
       }}
       onResend={async () => {
         await api.post("/api/student/loginEmail", {
