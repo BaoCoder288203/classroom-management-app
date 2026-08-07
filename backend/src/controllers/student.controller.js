@@ -1,6 +1,10 @@
+const bcrypt = require("bcrypt");
 const { db } = require("../config/firebase");
 const { sendEmail } = require("../services/email.service");
-const { generateToken } = require("../services/jwt.service");
+const {
+  generateToken,
+  verifySetupToken,
+} = require("../services/jwt.service");
 
 function isValidEmail(email) {
   if (!email || String(email).trim() === "") {
@@ -144,4 +148,90 @@ async function validateAccessCode(req, res) {
   }
 }
 
-module.exports = { loginEmail, validateAccessCode };
+async function setupAccount(req, res) {
+  try {
+    const { token, username, password } = req.body;
+
+    if (!token || !username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu token, username hoặc password",
+      });
+    }
+
+    if (String(username).trim().length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Username phải có ít nhất 3 ký tự",
+      });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password phải có ít nhất 6 ký tự",
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = verifySetupToken(token);
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({
+          success: false,
+          message: "Link thiết lập đã hết hạn",
+        });
+      }
+      return res.status(401).json({
+        success: false,
+        message: "Token thiết lập không hợp lệ",
+      });
+    }
+
+    const email = normalizeEmail(decoded.email);
+    const studentsRef = db.collection("students");
+    const snapshot = await studentsRef
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy học viên",
+      });
+    }
+
+    const studentDoc = snapshot.docs[0];
+    const studentData = studentDoc.data();
+
+    if (studentData.isAccountSetup) {
+      return res.status(400).json({
+        success: false,
+        message: "Tài khoản đã được thiết lập",
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(String(password), 10);
+
+    await studentDoc.ref.update({
+      username: String(username).trim(),
+      passwordHash: passwordHash,
+      isAccountSetup: true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Thiết lập tài khoản thành công",
+    });
+  } catch (error) {
+    console.log("setupAccount error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
+module.exports = { loginEmail, validateAccessCode, setupAccount };
