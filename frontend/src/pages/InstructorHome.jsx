@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
+import ChatBox from "../components/ChatBox";
 
 function InstructorHome() {
   const { user, logout } = useAuth();
@@ -13,11 +14,26 @@ function InstructorHome() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [students, setStudents] = useState([]);
+  const [chatEmail, setChatEmail] = useState("");
 
   function handleLogout() {
     logout();
     navigate("/login");
   }
+
+  async function loadStudents() {
+    try {
+      const res = await api.get("/api/instructor/students");
+      setStudents(res.data.students || []);
+    } catch {
+      setStudents([]);
+    }
+  }
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
 
   async function handleAddStudent(e) {
     e.preventDefault();
@@ -35,6 +51,7 @@ function InstructorHome() {
       setName("");
       setPhone("");
       setEmail("");
+      await loadStudents();
     } catch (err) {
       setError(err.response?.data?.message || "Thêm học viên thất bại");
     } finally {
@@ -47,7 +64,7 @@ function InstructorHome() {
       style={{
         padding: 32,
         textAlign: "left",
-        maxWidth: 560,
+        maxWidth: 640,
         margin: "0 auto",
       }}
     >
@@ -144,6 +161,31 @@ function InstructorHome() {
           {loading ? "Đang gửi..." : "Thêm + gửi email"}
         </button>
       </form>
+
+      <h2 style={{ marginTop: 40, fontSize: 18 }}>Chat với học viên</h2>
+      <p style={{ color: "#666", fontSize: 14, marginTop: 0 }}>
+        Room = instructor SĐT + student email (đã sort).
+      </p>
+      <label style={{ display: "block", marginBottom: 12 }}>
+        Chọn học viên
+        <select
+          value={chatEmail}
+          onChange={(e) => setChatEmail(e.target.value)}
+          style={{ display: "block", width: "100%", marginTop: 4, padding: 8 }}
+        >
+          <option value="">-- Chọn --</option>
+          {students.map((s) => (
+            <option key={s.id} value={s.email}>
+              {s.name || s.email} ({s.email})
+            </option>
+          ))}
+        </select>
+      </label>
+      <ChatBox
+        myId={user?.identifier}
+        myRole="instructor"
+        otherId={chatEmail}
+      />
     </div>
   );
 }
