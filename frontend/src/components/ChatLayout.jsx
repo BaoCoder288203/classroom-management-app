@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import socket, { getRoomId } from "../socket";
+import socket, { getRoomId, normalizeId } from "../socket";
 import "../styles/chat.css";
 
 function ChatLayout({
@@ -8,6 +8,7 @@ function ChatLayout({
   conversations = [],
   title = "All Message",
   showSearch = true,
+  emptyHint = "No conversations",
 }) {
   const [selectedId, setSelectedId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -17,6 +18,13 @@ function ChatLayout({
 
   useEffect(() => {
     if (!selectedId && conversations.length > 0) {
+      setSelectedId(conversations[0].id);
+    }
+    if (
+      selectedId &&
+      conversations.length > 0 &&
+      !conversations.some((c) => c.id === selectedId)
+    ) {
       setSelectedId(conversations[0].id);
     }
   }, [conversations, selectedId]);
@@ -37,14 +45,16 @@ function ChatLayout({
 
     function onReceive(msg) {
       if (msg?.roomId !== roomId) return;
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        if (msg.id && prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
     }
 
     socket.on("chat_history", onHistory);
     socket.on("receive_message", onReceive);
 
     return () => {
-      socket.emit("leave_room", { roomId });
       socket.off("chat_history", onHistory);
       socket.off("receive_message", onReceive);
     };
@@ -62,6 +72,7 @@ function ChatLayout({
       roomId,
       senderId: myId,
       senderRole: myRole,
+      receiverId: selectedId,
       text: text.trim(),
     });
     setText("");
@@ -69,7 +80,11 @@ function ChatLayout({
 
   const filteredConversations = conversations.filter((c) => {
     if (!search.trim()) return true;
-    return (c.name || "").toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    return (
+      (c.name || "").toLowerCase().includes(q) ||
+      (c.id || "").toLowerCase().includes(q)
+    );
   });
 
   return (
@@ -89,7 +104,7 @@ function ChatLayout({
         <div className="conversation-list">
           {filteredConversations.length === 0 ? (
             <p style={{ color: "#9ca3af", fontSize: 13, padding: "0 8px" }}>
-              No conversations
+              {emptyHint}
             </p>
           ) : (
             filteredConversations.map((c) => (
@@ -109,7 +124,7 @@ function ChatLayout({
                 <div>
                   <p className="conversation-name">{c.name}</p>
                   <p className="conversation-preview">
-                    {c.lastMessage || "..."}
+                    {c.lastMessage || c.id || "..."}
                   </p>
                 </div>
               </div>
@@ -131,7 +146,9 @@ function ChatLayout({
                 <div
                   key={m.id || `${m.timestamp}-${i}`}
                   className={`chat-bubble ${
-                    m.senderId === myId ? "mine" : "theirs"
+                    normalizeId(m.senderId) === normalizeId(myId)
+                      ? "mine"
+                      : "theirs"
                   }`}
                 >
                   {m.text}
@@ -149,7 +166,11 @@ function ChatLayout({
             </form>
           </>
         ) : (
-          <div className="chat-empty">Select a conversation to start</div>
+          <div className="chat-empty">
+            {conversations.length === 0
+              ? emptyHint
+              : "Select a conversation to start"}
+          </div>
         )}
       </div>
     </div>

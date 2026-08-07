@@ -347,6 +347,43 @@ async function markLessonDone(req, res) {
   }
 }
 
+async function getProfile(req, res) {
+  try {
+    const email = req.user?.email;
+    if (!email) {
+      return res.status(401).json({
+        success: false,
+        message: "Chưa xác thực",
+      });
+    }
+
+    const studentDoc = await findStudentByEmail(email);
+    if (!studentDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy học viên",
+      });
+    }
+
+    const d = studentDoc.data();
+    return res.status(200).json({
+      success: true,
+      student: {
+        name: d.name || "",
+        email: d.email || email,
+        phone: d.phone || "",
+        username: d.username || "",
+      },
+    });
+  } catch (error) {
+    console.log("getProfile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
 async function editProfile(req, res) {
   try {
     const currentEmail = req.user?.email;
@@ -364,7 +401,7 @@ async function editProfile(req, res) {
       });
     }
 
-    const { name, username } = req.body;
+    const { name, username, phone } = req.body;
     const updates = {};
 
     if (name !== undefined && name !== null && String(name).trim() !== "") {
@@ -383,6 +420,10 @@ async function editProfile(req, res) {
         });
       }
       updates.username = String(username).trim();
+    }
+
+    if (phone !== undefined && phone !== null && String(phone).trim() !== "") {
+      updates.phone = String(phone).trim();
     }
 
     if (Object.keys(updates).length === 0) {
@@ -415,11 +456,66 @@ async function editProfile(req, res) {
   }
 }
 
+async function getConversations(req, res) {
+  try {
+    const email = req.user?.email;
+    if (!email) {
+      return res.status(401).json({
+        success: false,
+        message: "Chưa xác thực",
+      });
+    }
+
+    const me = String(email).trim().toLowerCase();
+
+    const snap = await db
+      .collection("messages")
+      .where("participants", "array-contains", me)
+      .get();
+
+    const map = {};
+    snap.docs.forEach((doc) => {
+      const m = doc.data();
+      const parts = m.participants || [];
+      const other = parts.find((p) => p !== me);
+      if (!other) return;
+
+      const ts = m.timestamp || 0;
+      if (!map[other] || ts > (map[other].lastAt || 0)) {
+        map[other] = {
+          id: other,
+          name: other,
+          lastMessage: m.text || "",
+          lastAt: ts,
+          lastSenderId: m.senderId || "",
+        };
+      }
+    });
+
+    const conversations = Object.values(map).sort(
+      (a, b) => (b.lastAt || 0) - (a.lastAt || 0)
+    );
+
+    return res.status(200).json({
+      success: true,
+      conversations,
+    });
+  } catch (error) {
+    console.log("getConversations error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Đã có lỗi xảy ra",
+    });
+  }
+}
+
 module.exports = {
   loginEmail,
   validateAccessCode,
   setupAccount,
   getMyLessons,
   markLessonDone,
+  getProfile,
   editProfile,
+  getConversations,
 };

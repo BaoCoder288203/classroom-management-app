@@ -13,7 +13,7 @@ function ProtectedRoute({ role, children }) {
       return <Navigate to="/instructor/students" replace />;
     }
     if (user.role === "student") {
-      return <Navigate to="/student/messages" replace />;
+      return <Navigate to="/student/lessons" replace />;
     }
     return <Navigate to="/login" replace />;
   }

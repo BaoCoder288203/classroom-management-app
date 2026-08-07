@@ -7,6 +7,7 @@ const {
   editStudent,
   deleteStudent,
   assignLesson,
+  getLessons,
 } = require("../controllers/instructor.controller");
 const {
   verifyToken,
@@ -18,6 +19,7 @@ router.use(verifyToken, requireRole("instructor"));
 
 router.post("/addStudent", addStudent);
 router.get("/students", getStudents);
+router.get("/lessons", getLessons);
 router.get("/student/:phone", getStudentByPhone);
 router.put("/editStudent/:phone", editStudent);
 router.delete("/student/:phone", deleteStudent);
