@@ -146,6 +146,7 @@ async function validateAccessCode(req, res) {
       success: true,
       token: token,
       role: role,
+      phone: formattedPhone,
     });
   } catch (error) {
     console.log("validateAccessCode error:", error);

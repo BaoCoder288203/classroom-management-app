@@ -1,0 +1,161 @@
+.chat-layout {
+  display: flex;
+  height: calc(100vh - 120px);
+  gap: 12px;
+  min-height: 420px;
+}
+
+.chat-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-sidebar-title {
+  padding: 20px;
+  background: #f5f5f4;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #111;
+}
+
+.chat-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  margin-top: 12px;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  background: #f5f5f4;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.conversation-item.active {
+  background: #e0e7ff;
+}
+
+.conversation-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #d1d5db;
+  flex-shrink: 0;
+}
+
+.conversation-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 4px;
+  color: #111;
+}
+
+.conversation-preview {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f4;
+  border-radius: 8px;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-bubble {
+  max-width: 60%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.chat-bubble.mine {
+  align-self: flex-end;
+  background: #3b5fe2;
+  color: #fff;
+}
+
+.chat-bubble.theirs {
+  align-self: flex-start;
+  background: #fff;
+  color: #111;
+}
+
+.chat-input-bar {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  background: #d1d5db;
+}
+
+.chat-input-bar input {
+  flex: 1;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 6px;
+}
+
+.chat-input-bar button {
+  padding: 0 20px;
+  border: none;
+  border-radius: 6px;
+  background: #3b5fe2;
+  color: #fff;
+  cursor: pointer;
+}
+
+.chat-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .chat-layout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .chat-sidebar {
+    width: 100%;
+  }
+
+  .chat-panel {
+    min-height: 400px;
+  }
+}
