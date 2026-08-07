@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import InstructorHome from "./pages/InstructorHome";
 import StudentHome from "./pages/StudentHome";
+import SetupAccount from "./pages/SetupAccount";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/setup-account" element={<SetupAccount />} />
           <Route
             path="/instructor"
             element={
