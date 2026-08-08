@@ -6,10 +6,14 @@ const {
   validateAccessCode,
 } = require("../controllers/auth.controller");
 const { verifyToken } = require("../middleware/auth.middleware");
+const {
+  otpSendLimiter,
+  otpVerifyLimiter,
+} = require("../middleware/rateLimit.middleware");
 
-router.post("/createAccessCode", createAccessCode);
-router.post("/instructorSignup", instructorSignup);
-router.post("/validateAccessCode", validateAccessCode);
+router.post("/createAccessCode", otpSendLimiter, createAccessCode);
+router.post("/instructorSignup", otpSendLimiter, instructorSignup);
+router.post("/validateAccessCode", otpVerifyLimiter, validateAccessCode);
 
 router.get("/me", verifyToken, (req, res) => {
   return res.status(200).json({
