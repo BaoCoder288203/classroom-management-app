@@ -13,12 +13,26 @@ function AuthForm({
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldError, setFieldError] = useState("");
 
   const isPhone = mode === "phone";
 
   async function handleSubmitIdentifier(e) {
     e.preventDefault();
     setError("");
+    setFieldError("");
+
+    if (!value.trim()) {
+      setFieldError(
+        isPhone ? "Vui lòng nhập số điện thoại" : "Vui lòng nhập email"
+      );
+      return;
+    }
+    if (!isPhone && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+      setFieldError("Email không hợp lệ");
+      return;
+    }
+
     setLoading(true);
     try {
       await onSubmitIdentifier(value.trim());
@@ -33,6 +47,17 @@ function AuthForm({
   async function handleSubmitOtp(e) {
     e.preventDefault();
     setError("");
+    setFieldError("");
+
+    if (!otp.trim()) {
+      setFieldError("Vui lòng nhập mã xác thực");
+      return;
+    }
+    if (otp.trim().length < 4) {
+      setFieldError("Mã xác thực không hợp lệ");
+      return;
+    }
+
     setLoading(true);
     try {
       await onSubmitOtp(otp.trim());
@@ -65,18 +90,23 @@ function AuthForm({
             Please enter your {isPhone ? "phone" : "email"} to sign in
           </p>
           {error && <div className="auth-error">{error}</div>}
-          <form onSubmit={handleSubmitIdentifier}>
-            <input
-              className="auth-input"
-              type={isPhone ? "tel" : "email"}
-              placeholder={
-                isPhone ? "Your Phone Number" : "Your Email Address"
-              }
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              disabled={loading}
-              required
-            />
+          <form onSubmit={handleSubmitIdentifier} noValidate>
+            <div className="auth-field">
+              <input
+                className={`auth-input ${fieldError ? "input-error" : ""}`}
+                type={isPhone ? "tel" : "email"}
+                placeholder={
+                  isPhone ? "Your Phone Number" : "Your Email Address"
+                }
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  if (fieldError) setFieldError("");
+                }}
+                disabled={loading}
+              />
+              {fieldError && <p className="field-error">{fieldError}</p>}
+            </div>
             <button className="auth-button" disabled={loading} type="submit">
               {loading ? "Sending..." : "Next"}
             </button>
@@ -96,6 +126,7 @@ function AuthForm({
             setStep("identifier");
             setOtp("");
             setError("");
+            setFieldError("");
           }}
           type="button"
         >
@@ -109,18 +140,23 @@ function AuthForm({
           {isPhone ? "phone" : "email address"}
         </p>
         {error && <div className="auth-error">{error}</div>}
-        <form onSubmit={handleSubmitOtp}>
-          <input
-            className="auth-input"
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            placeholder="Enter Your code"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            disabled={loading}
-            required
-          />
+        <form onSubmit={handleSubmitOtp} noValidate>
+          <div className="auth-field">
+            <input
+              className={`auth-input ${fieldError ? "input-error" : ""}`}
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="Enter Your code"
+              value={otp}
+              onChange={(e) => {
+                setOtp(e.target.value);
+                if (fieldError) setFieldError("");
+              }}
+              disabled={loading}
+            />
+            {fieldError && <p className="field-error">{fieldError}</p>}
+          </div>
           <button className="auth-button" disabled={loading} type="submit">
             {loading ? "Verifying..." : "Submit"}
           </button>

@@ -11,6 +11,7 @@ function ManageLessons() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [errors, setErrors] = useState({});
 
   async function load() {
     try {
@@ -34,17 +35,24 @@ function ManageLessons() {
     setSelectedPhones((prev) =>
       prev.includes(phone) ? prev.filter((p) => p !== phone) : [...prev, phone]
     );
+    if (errors.students) setErrors((prev) => ({ ...prev, students: "" }));
+  }
+
+  function validate() {
+    const next = {};
+    if (!title.trim()) next.title = "Vui lòng nhập tiêu đề lesson";
+    if (selectedPhones.length === 0) {
+      next.students = "Chọn ít nhất 1 học viên";
+    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
   }
 
   async function handleAssign(e) {
     e.preventDefault();
     setError("");
     setMessage("");
-
-    if (!title.trim() || selectedPhones.length === 0) {
-      setError("Nhập title và chọn ít nhất 1 học viên");
-      return;
-    }
+    if (!validate()) return;
 
     setLoading(true);
     try {
@@ -61,6 +69,7 @@ function ManageLessons() {
       setTitle("");
       setDescription("");
       setSelectedPhones([]);
+      setErrors({});
       await load();
     } catch (err) {
       setError(err.response?.data?.message || "Gán lesson thất bại");
@@ -83,16 +92,20 @@ function ManageLessons() {
       {error && <div className="dashboard-error">{error}</div>}
       {message && <div className="dashboard-success">{message}</div>}
 
-      <form onSubmit={handleAssign} style={{ marginBottom: 32 }}>
+      <form onSubmit={handleAssign} style={{ marginBottom: 32 }} noValidate>
         <h2 style={{ fontSize: 16, marginBottom: 12 }}>Assign new lesson</h2>
         <div className="modal-field" style={{ marginBottom: 12 }}>
           <label>Title</label>
           <input
+            className={errors.title ? "input-error" : ""}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: "" }));
+            }}
             disabled={loading}
           />
+          {errors.title && <p className="field-error">{errors.title}</p>}
         </div>
         <div className="modal-field" style={{ marginBottom: 12 }}>
           <label>Description</label>
@@ -106,7 +119,14 @@ function ManageLessons() {
         </div>
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontWeight: 600, fontSize: 13 }}>Assign to</label>
-          <div className="checklist-box">
+          <div
+            className="checklist-box"
+            style={
+              errors.students
+                ? { borderColor: "var(--danger)" }
+                : undefined
+            }
+          >
             {students.length === 0 && (
               <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
                 No students
@@ -124,6 +144,9 @@ function ManageLessons() {
               </label>
             ))}
           </div>
+          {errors.students && (
+            <p className="field-error">{errors.students}</p>
+          )}
         </div>
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? "Assigning..." : "Assign lesson"}

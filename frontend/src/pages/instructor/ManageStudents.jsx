@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../../api/client";
 import CreateStudentModal from "./CreateStudentModal";
 import EditStudentModal from "./EditStudentModal";
+import { getInitials } from "../../utils/initials";
 import "../../styles/dashboard.css";
 
 function ManageStudents() {
@@ -103,7 +104,14 @@ function ManageStudents() {
               ) : (
                 filteredStudents.map((s) => (
                   <tr key={s.id || s.phone}>
-                    <td>{s.name}</td>
+                    <td>
+                      <div className="cell-user">
+                        <span className="cell-avatar">
+                          {getInitials(s.name || s.email)}
+                        </span>
+                        {s.name}
+                      </div>
+                    </td>
                     <td>{s.email}</td>
                     <td>{s.phone}</td>
                     <td>
