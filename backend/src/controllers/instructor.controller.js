@@ -130,10 +130,43 @@ async function addStudent(req, res) {
 
 async function getStudents(req, res) {
   try {
-    const snapshot = await db.collection("students").get();
-    const students = snapshot.docs.map((doc) =>
-      sanitizeStudent(doc.id, doc.data())
-    );
+    const [studentsSnap, lessonsSnap] = await Promise.all([
+      db.collection("students").get(),
+      db.collection("lessons").get(),
+    ]);
+
+    const lessonByPhone = {};
+    lessonsSnap.docs.forEach((doc) => {
+      const data = doc.data() || {};
+      const phone = String(data.assignedTo || "").trim();
+      if (!phone) return;
+      if (!lessonByPhone[phone]) {
+        lessonByPhone[phone] = { pending: 0, done: 0, total: 0 };
+      }
+      lessonByPhone[phone].total += 1;
+      if (data.status === "done") lessonByPhone[phone].done += 1;
+      else lessonByPhone[phone].pending += 1;
+    });
+
+    const students = studentsSnap.docs.map((doc) => {
+      const base = sanitizeStudent(doc.id, doc.data());
+      const stats = lessonByPhone[String(base.phone || "").trim()] || {
+        pending: 0,
+        done: 0,
+        total: 0,
+      };
+      return {
+        ...base,
+        role: base.role || "student",
+        lessonStats: stats,
+        lessonStatus:
+          stats.total === 0
+            ? "No lessons"
+            : stats.pending === 0
+              ? "All done"
+              : `${stats.pending} pending / ${stats.done} done`,
+      };
+    });
 
     return res.status(200).json({
       success: true,

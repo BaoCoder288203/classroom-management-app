@@ -94,6 +94,13 @@ function CreateStudentModal({ onClose, onCreated }) {
               />
               {errors.email && <p className="field-error">{errors.email}</p>}
             </div>
+            <div className="modal-field full">
+              <label>Role</label>
+              <input value="Student" disabled />
+              <p className="field-hint">
+                Học viên mới luôn được tạo với role <b>student</b>.
+              </p>
+            </div>
           </div>
           <div className="modal-footer">
             <button

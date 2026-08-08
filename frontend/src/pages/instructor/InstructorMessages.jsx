@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/client";
 import ChatLayout from "../../components/ChatLayout";
@@ -6,7 +7,10 @@ import { normalizeId } from "../../socket";
 
 function InstructorMessages() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
+
+  const studentParam = searchParams.get("student") || "";
 
   useEffect(() => {
     async function load() {
@@ -32,6 +36,7 @@ function InstructorMessages() {
       conversations={conversations}
       title="All Message"
       showSearch
+      initialSelectedId={studentParam ? normalizeId(studentParam) : null}
     />
   );
 }
