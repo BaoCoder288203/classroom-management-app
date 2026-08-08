@@ -72,7 +72,6 @@ router.post("/upload", verifyToken, (req, res) => {
   });
 });
 
-// GIF picker: Giphy API hoặc bộ curated fallback
 const FALLBACK_GIFS = [
   {
     id: "1",

@@ -6,7 +6,6 @@ const socket = io(URL, {
   autoConnect: true,
 });
 
-/** phone -> E.164 (+84...), email -> lowercase */
 export function normalizeId(id) {
   const s = String(id || "").trim();
   if (!s) return s;

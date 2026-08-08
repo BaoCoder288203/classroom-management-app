@@ -28,7 +28,6 @@ function StudentMessages() {
   const myId = normalizeId(user?.identifier);
   const [conversations, setConversations] = useState([]);
 
-  // load từ server (persist) + realtime khi instructor nhắn
   useEffect(() => {
     if (!myId) return;
 
@@ -51,7 +50,6 @@ function StudentMessages() {
     function onReceive(msg) {
       const peer = peerFromMsg(msg, myId);
       if (!peer) return;
-      // chỉ hiện khi ai đó nhắn mình (hoặc mình reply sau khi đã có)
       setConversations((prev) => {
         const exists = prev.find((c) => c.id === peer);
         const row = {
@@ -62,7 +60,6 @@ function StudentMessages() {
         if (exists) {
           return [row, ...prev.filter((c) => c.id !== peer)];
         }
-        // tin do mình gửi nhưng chưa có peer? không mở conversation mới
         if (normalizeId(msg.senderId) === myId) {
           return prev;
         }

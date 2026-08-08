@@ -68,7 +68,6 @@ async function sendAndStoreCode(userDoc, formattedPhone, createPayload) {
   await sendSMS(formattedPhone, `Your access code is: ${code}`);
 }
 
-// Instructor Sign In — chỉ gửi OTP nếu đã có account role instructor
 async function createAccessCode(req, res) {
   try {
     const { phoneNumber } = req.body;
@@ -113,7 +112,6 @@ async function createAccessCode(req, res) {
   }
 }
 
-// Instructor Sign Up — tạo role instructor + gửi OTP
 async function instructorSignup(req, res) {
   try {
     const { phoneNumber, name } = req.body;
