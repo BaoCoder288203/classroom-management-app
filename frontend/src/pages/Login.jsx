@@ -75,15 +75,16 @@ function Login() {
         onSubmitIdentifier={async (phoneNumber, meta) => {
           setIdentifier(phoneNumber);
           if (meta?.authMode === "signup") {
-            await api.post("/api/auth/instructorSignup", {
+            const res = await api.post("/api/auth/instructorSignup", {
               phoneNumber,
               name: meta.name || "",
             });
-          } else {
-            await api.post("/api/auth/createAccessCode", {
-              phoneNumber,
-            });
+            return res.data;
           }
+          const res = await api.post("/api/auth/createAccessCode", {
+            phoneNumber,
+          });
+          return res.data;
         }}
         onSubmitOtp={async (accessCode) => {
           const res = await api.post("/api/auth/validateAccessCode", {
@@ -98,9 +99,10 @@ function Login() {
           navigate("/instructor/students");
         }}
         onResend={async () => {
-          await api.post("/api/auth/createAccessCode", {
+          const res = await api.post("/api/auth/createAccessCode", {
             phoneNumber: identifier,
           });
+          return res.data;
         }}
       />
     );
@@ -115,7 +117,8 @@ function Login() {
       }}
       onSubmitIdentifier={async (email) => {
         setIdentifier(email);
-        await api.post("/api/student/loginEmail", { email });
+        const res = await api.post("/api/student/loginEmail", { email });
+        return res.data;
       }}
       onSubmitOtp={async (accessCode) => {
         const res = await api.post("/api/student/validateAccessCode", {
@@ -132,9 +135,10 @@ function Login() {
         );
       }}
       onResend={async () => {
-        await api.post("/api/student/loginEmail", {
+        const res = await api.post("/api/student/loginEmail", {
           email: identifier,
         });
+        return res.data;
       }}
     />
   );
