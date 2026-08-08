@@ -26,6 +26,27 @@ classroom-management-app/
 - JWT for protected API routes; `role` in token + localStorage
 - **CORS:** API + Socket.io allow only `FRONTEND_URL`
 - **OTP rate limit:** gửi mã max 5 / 15 phút; verify max 10 / 15 phút (theo IP)
+- **Demo OTP toast:** after request OTP, code is shown top-right (react-hot-toast) when debug OTP is enabled (default)
+
+### Testing OTP (HR / reviewers)
+
+**Infobip trial limitation:** free trial accounts typically **cannot deliver SMS to arbitrary phone numbers** — only numbers allowed in the Infobip trial/whitelist. Delivery reports may still show `PENDING_ACCEPTED` even when the phone never receives SMS.
+
+**How to test instructor (phone) login without real SMS:**
+
+1. Sign up / Sign in with a phone number as usual  
+2. When the verification step opens, a toast appears at the **top-right**: `Mã OTP (demo): 123456`  
+3. Enter that code in the 6 boxes (or wait for email OTP toast for students)  
+
+Also logged on the backend: `[OTP] +84... 123456`.
+
+Turn off OTP in API responses for real production:
+
+```env
+OTP_DEBUG=false
+```
+
+(Default is **on** unless `OTP_DEBUG=false`.)
 
 ### Chat media
 - GIF picker via `GET /api/chat/gifs` (Giphy if `GIPHY_API_KEY` set, else curated list)
@@ -73,8 +94,11 @@ Create `backend/.env` (do not commit):
 PORT=3001
 JWT_SECRET=your-secret
 FRONTEND_URL=http://localhost:5173
-# Optional absolute URL for uploaded files (production)
-# API_PUBLIC_URL=https://your-api.example.com
+# Demo: return debugOtp to FE toast (default on; set false for production)
+# OTP_DEBUG=false
+# Optional absolute public URL (uploads + Infobip delivery webhook)
+# API_PUBLIC_URL=https://xxxx.ngrok-free.app
+# INFOBIP_WEBHOOK_SECRET=random-secret
 # Optional Giphy key for GIF search
 # GIPHY_API_KEY=your_giphy_key
 # Firebase + Infobip + email vars...

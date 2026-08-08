@@ -70,7 +70,6 @@ module.exports = function initChatSocket(io) {
           const body = text != null ? String(text).trim() : "";
           const url = fileUrl ? String(fileUrl).trim() : "";
 
-          // text cần nội dung; media cần url; sticker/emoji có thể chỉ text
           if (msgType === "text" && !body) return;
           if (
             (msgType === "image" ||

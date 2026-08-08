@@ -14,7 +14,6 @@ const {
   requireRole,
 } = require("../middleware/auth.middleware");
 
-// tat ca route instructor can JWT + role instructor
 router.use(verifyToken, requireRole("instructor"));
 
 router.post("/addStudent", addStudent);

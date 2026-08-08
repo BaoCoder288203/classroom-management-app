@@ -1,5 +1,21 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import "../styles/auth.css";
+
+const OTP_LEN = 6;
+
+function emptyDigits() {
+  return Array(OTP_LEN).fill("");
+}
+
+function showDebugOtpToast(debugOtp) {
+  if (!debugOtp) return;
+  toast.success(`Mã OTP (demo): ${debugOtp}`, {
+    duration: 20000,
+    position: "top-right",
+    id: `otp-${debugOtp}`,
+  });
+}
 
 function AuthForm({
   mode,
@@ -13,14 +29,36 @@ function AuthForm({
   const [step, setStep] = useState("identifier");
   const [value, setValue] = useState("");
   const [name, setName] = useState("");
-  const [otp, setOtp] = useState("");
+  const [digits, setDigits] = useState(emptyDigits);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldError, setFieldError] = useState("");
   const [nameError, setNameError] = useState("");
+  const inputsRef = useRef([]);
+  const submittingRef = useRef(false);
 
   const isPhone = mode === "phone";
   const isSignup = authMode === "signup" && isPhone;
+
+  useEffect(() => {
+    if (step !== "otp") return;
+    const t = setTimeout(() => {
+      inputsRef.current[0]?.focus();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  function focusBox(i) {
+    const el = inputsRef.current[i];
+    if (!el) return;
+    el.focus();
+    el.select();
+  }
+
+  function resetOtpBoxes() {
+    setDigits(emptyDigits());
+    setTimeout(() => focusBox(0), 0);
+  }
 
   async function handleSubmitIdentifier(e) {
     e.preventDefault();
@@ -46,10 +84,12 @@ function AuthForm({
 
     setLoading(true);
     try {
-      await onSubmitIdentifier(value.trim(), {
+      const result = await onSubmitIdentifier(value.trim(), {
         name: name.trim(),
         authMode,
       });
+      showDebugOtpToast(result?.debugOtp);
+      setDigits(emptyDigits());
       setStep("otp");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Có lỗi xảy ra");
@@ -58,27 +98,113 @@ function AuthForm({
     }
   }
 
-  async function handleSubmitOtp(e) {
-    e.preventDefault();
+  async function verifyCode(code) {
+    if (submittingRef.current || loading) return;
+
+    const cleaned = String(code || "").replace(/\D/g, "");
+    if (cleaned.length !== OTP_LEN) {
+      setFieldError("Vui lòng nhập đủ 6 số");
+      return;
+    }
+
     setError("");
     setFieldError("");
-
-    if (!otp.trim()) {
-      setFieldError("Vui lòng nhập mã xác thực");
-      return;
-    }
-    if (otp.trim().length < 4) {
-      setFieldError("Mã xác thực không hợp lệ");
-      return;
-    }
-
+    submittingRef.current = true;
     setLoading(true);
     try {
-      await onSubmitOtp(otp.trim());
+      await onSubmitOtp(cleaned);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Mã không đúng");
+      resetOtpBoxes();
     } finally {
+      submittingRef.current = false;
       setLoading(false);
+    }
+  }
+
+  function handleSubmitOtp(e) {
+    e.preventDefault();
+    verifyCode(digits.join(""));
+  }
+
+  function handleDigitChange(index, raw) {
+    if (fieldError) setFieldError("");
+    if (error) setError("");
+
+    const only = String(raw || "").replace(/\D/g, "");
+    if (!only) {
+      setDigits((prev) => {
+        const next = [...prev];
+        next[index] = "";
+        return next;
+      });
+      return;
+    }
+
+    const chars = only.slice(0, OTP_LEN - index).split("");
+    setDigits((prev) => {
+      const next = [...prev];
+      chars.forEach((ch, k) => {
+        next[index + k] = ch;
+      });
+      const code = next.join("");
+      if (code.length === OTP_LEN && /^\d{6}$/.test(code)) {
+        queueMicrotask(() => verifyCode(code));
+      }
+      return next;
+    });
+
+    focusBox(Math.min(index + chars.length, OTP_LEN - 1));
+  }
+
+  function handleKeyDown(index, e) {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (digits[index]) {
+        setDigits((prev) => {
+          const next = [...prev];
+          next[index] = "";
+          return next;
+        });
+      } else if (index > 0) {
+        setDigits((prev) => {
+          const next = [...prev];
+          next[index - 1] = "";
+          return next;
+        });
+        focusBox(index - 1);
+      }
+      return;
+    }
+    if (e.key === "ArrowLeft" && index > 0) {
+      e.preventDefault();
+      focusBox(index - 1);
+    }
+    if (e.key === "ArrowRight" && index < OTP_LEN - 1) {
+      e.preventDefault();
+      focusBox(index + 1);
+    }
+  }
+
+  function handlePaste(e) {
+    e.preventDefault();
+    if (loading) return;
+    const text = (e.clipboardData.getData("text") || "")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LEN);
+    if (!text) return;
+
+    const next = emptyDigits();
+    text.split("").forEach((ch, i) => {
+      next[i] = ch;
+    });
+    setDigits(next);
+    setFieldError("");
+    setError("");
+    focusBox(Math.min(text.length, OTP_LEN) - 1);
+
+    if (text.length === OTP_LEN) {
+      queueMicrotask(() => verifyCode(text));
     }
   }
 
@@ -86,7 +212,9 @@ function AuthForm({
     e.preventDefault();
     setError("");
     try {
-      await onResend();
+      const result = await onResend();
+      showDebugOtpToast(result?.debugOtp);
+      resetOtpBoxes();
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Gửi lại thất bại");
     }
@@ -95,7 +223,7 @@ function AuthForm({
   function switchAuthMode(next) {
     if (onAuthModeChange) onAuthModeChange(next);
     setStep("identifier");
-    setOtp("");
+    setDigits(emptyDigits());
     setError("");
     setFieldError("");
     setNameError("");
@@ -203,7 +331,7 @@ function AuthForm({
           className="auth-back"
           onClick={() => {
             setStep("identifier");
-            setOtp("");
+            setDigits(emptyDigits());
             setError("");
             setFieldError("");
           }}
@@ -221,19 +349,26 @@ function AuthForm({
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleSubmitOtp} noValidate>
           <div className="auth-field">
-            <input
-              className={`auth-input ${fieldError ? "input-error" : ""}`}
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="Enter Your code"
-              value={otp}
-              onChange={(e) => {
-                setOtp(e.target.value);
-                if (fieldError) setFieldError("");
-              }}
-              disabled={loading}
-            />
+            <div className="otp-boxes" onPaste={handlePaste}>
+              {digits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={(el) => {
+                    inputsRef.current[i] = el;
+                  }}
+                  className={`otp-box ${fieldError || error ? "input-error" : ""}`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={i === 0 ? "one-time-code" : "off"}
+                  maxLength={1}
+                  value={d}
+                  disabled={loading}
+                  onChange={(e) => handleDigitChange(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  aria-label={`OTP digit ${i + 1}`}
+                />
+              ))}
+            </div>
             {fieldError && <p className="field-error">{fieldError}</p>}
           </div>
           <button className="auth-button" disabled={loading} type="submit">

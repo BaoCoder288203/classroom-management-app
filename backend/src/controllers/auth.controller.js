@@ -50,6 +50,7 @@ async function findUserByPhone(formattedPhone) {
 
 async function sendAndStoreCode(userDoc, formattedPhone, createPayload) {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
+  console.log("[OTP]", formattedPhone, code);
 
   if (!userDoc) {
     await db.collection("users").add({
@@ -66,9 +67,14 @@ async function sendAndStoreCode(userDoc, formattedPhone, createPayload) {
   }
 
   await sendSMS(formattedPhone, `Your access code is: ${code}`);
+  return code;
 }
 
-// Instructor Sign In — chỉ gửi OTP nếu đã có account role instructor
+function debugOtpFields(code) {
+  if (process.env.OTP_DEBUG === "false") return {};
+  return { debugOtp: code };
+}
+
 async function createAccessCode(req, res) {
   try {
     const { phoneNumber } = req.body;
@@ -98,11 +104,12 @@ async function createAccessCode(req, res) {
       });
     }
 
-    await sendAndStoreCode(userDoc, formattedPhone, {});
+    const code = await sendAndStoreCode(userDoc, formattedPhone, {});
 
     return res.status(200).json({
       success: true,
       message: "Đã gửi mã truy cập",
+      ...debugOtpFields(code),
     });
   } catch (error) {
     console.log("createAccessCode error:", error);
@@ -113,7 +120,6 @@ async function createAccessCode(req, res) {
   }
 }
 
-// Instructor Sign Up — tạo role instructor + gửi OTP
 async function instructorSignup(req, res) {
   try {
     const { phoneNumber, name } = req.body;
@@ -147,11 +153,12 @@ async function instructorSignup(req, res) {
       name: name ? String(name).trim() : "",
     };
 
-    await sendAndStoreCode(null, formattedPhone, createPayload);
+    const code = await sendAndStoreCode(null, formattedPhone, createPayload);
 
     return res.status(201).json({
       success: true,
       message: "Đã tạo instructor và gửi mã OTP",
+      ...debugOtpFields(code),
     });
   } catch (error) {
     console.log("instructorSignup error:", error);
