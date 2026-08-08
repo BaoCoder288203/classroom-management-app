@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import CreateStudentModal from "./CreateStudentModal";
 import EditStudentModal from "./EditStudentModal";
@@ -6,6 +7,7 @@ import { getInitials } from "../../utils/initials";
 import "../../styles/dashboard.css";
 
 function ManageStudents() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,13 +45,21 @@ function ManageStudents() {
     }
   }
 
+  function openChat(student) {
+    if (!student?.email) return;
+    navigate(
+      `/instructor/messages?student=${encodeURIComponent(student.email)}`
+    );
+  }
+
   const filteredStudents = students.filter((s) => {
     const q = filter.toLowerCase();
     if (!q) return true;
     return (
       s.name?.toLowerCase().includes(q) ||
       s.email?.toLowerCase().includes(q) ||
-      s.phone?.toLowerCase().includes(q)
+      s.phone?.toLowerCase().includes(q) ||
+      (s.role || "").toLowerCase().includes(q)
     );
   });
 
@@ -90,14 +100,16 @@ function ManageStudents() {
                 <th>Student Name</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Status</th>
+                <th>Role</th>
+                <th>Account</th>
+                <th>Lessons</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ color: "#9ca3af" }}>
+                  <td colSpan={7} style={{ color: "#9ca3af" }}>
                     No students found
                   </td>
                 </tr>
@@ -115,6 +127,9 @@ function ManageStudents() {
                     <td>{s.email}</td>
                     <td>{s.phone}</td>
                     <td>
+                      <span className="role-pill">{s.role || "student"}</span>
+                    </td>
+                    <td>
                       <span
                         className={`status-badge ${
                           s.isAccountSetup ? "" : "pending"
@@ -124,6 +139,23 @@ function ManageStudents() {
                       </span>
                     </td>
                     <td>
+                      <span
+                        className={`status-badge ${
+                          s.lessonStats?.pending > 0 ? "pending" : ""
+                        }`}
+                      >
+                        {s.lessonStatus || "No lessons"}
+                      </span>
+                    </td>
+                    <td className="action-cell">
+                      <button
+                        type="button"
+                        className="btn-icon-msg"
+                        title="Message"
+                        onClick={() => openChat(s)}
+                      >
+                        💬
+                      </button>
                       <button
                         type="button"
                         className="btn-edit"
