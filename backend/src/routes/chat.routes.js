@@ -72,4 +72,103 @@ router.post("/upload", verifyToken, (req, res) => {
   });
 });
 
+// GIF picker: Giphy API hoặc bộ curated fallback
+const FALLBACK_GIFS = [
+  {
+    id: "1",
+    preview: "https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/200.gif",
+    url: "https://media.giphy.com/media/3o7aCTPPm4OHfRLSH6/giphy.gif",
+    title: "Thumbs up",
+  },
+  {
+    id: "2",
+    preview: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/200.gif",
+    url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+    title: "Party",
+  },
+  {
+    id: "3",
+    preview: "https://media.giphy.com/media/26u4cqiYI30juCOGY/200.gif",
+    url: "https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif",
+    title: "Clap",
+  },
+  {
+    id: "4",
+    preview: "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/200.gif",
+    url: "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif",
+    title: "Happy",
+  },
+  {
+    id: "5",
+    preview: "https://media.giphy.com/media/5GoVLqeAOo6PK/200.gif",
+    url: "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
+    title: "Excited",
+  },
+  {
+    id: "6",
+    preview: "https://media.giphy.com/media/l3q2K5jinAlChoCLS/200.gif",
+    url: "https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif",
+    title: "Wow",
+  },
+  {
+    id: "7",
+    preview: "https://media.giphy.com/media/artj92V8o75VPL7AeQ/200.gif",
+    url: "https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif",
+    title: "Thank you",
+  },
+  {
+    id: "8",
+    preview: "https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/200.gif",
+    url: "https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif",
+    title: "Coffee",
+  },
+];
+
+router.get("/gifs", verifyToken, async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim();
+    const apiKey = process.env.GIPHY_API_KEY;
+
+    if (apiKey) {
+      const endpoint = q
+        ? `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(q)}&limit=24&rating=g`
+        : `https://api.giphy.com/v1/gifs/trending?api_key=${apiKey}&limit=24&rating=g`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      const gifs = (data.data || []).map((g) => ({
+        id: g.id,
+        preview:
+          g.images?.fixed_height_small?.url ||
+          g.images?.fixed_height?.url ||
+          "",
+        url: g.images?.original?.url || g.images?.downsized?.url || "",
+        title: g.title || "gif",
+      })).filter((g) => g.url);
+
+      return res.status(200).json({ success: true, gifs, source: "giphy" });
+    }
+
+    const lower = q.toLowerCase();
+    const gifs = !q
+      ? FALLBACK_GIFS
+      : FALLBACK_GIFS.filter((g) =>
+          g.title.toLowerCase().includes(lower)
+        );
+
+    return res.status(200).json({
+      success: true,
+      gifs,
+      source: "fallback",
+      message: "Set GIPHY_API_KEY on backend for full Giphy search",
+    });
+  } catch (error) {
+    console.log("gifs error:", error);
+    return res.status(200).json({
+      success: true,
+      gifs: FALLBACK_GIFS,
+      source: "fallback",
+    });
+  }
+});
+
 module.exports = router;

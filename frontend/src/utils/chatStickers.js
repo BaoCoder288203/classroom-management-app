@@ -1,4 +1,4 @@
-/* Emoji & sticker packs for chat toolbar */
+/* Unicode emojis for emoji panel only */
 export const QUICK_EMOJIS = [
   "😀",
   "😂",
@@ -18,17 +18,22 @@ export const QUICK_EMOJIS = [
   "✅",
 ];
 
-export const STICKERS = [
-  "🐶",
-  "🐱",
-  "🐼",
-  "🦊",
-  "🐸",
-  "🦄",
-  "🌟",
-  "🎈",
-  "🚀",
-  "🍕",
-  "☕",
-  "🌈",
-];
+/** Image stickers (DiceBear fun-emoji) — not plain Unicode */
+export const STICKER_PACK = [
+  "happy",
+  "cool",
+  "love",
+  "wow",
+  "smile",
+  "think",
+  "star",
+  "wave",
+  "cheer",
+  "focus",
+  "idea",
+  "win",
+].map((seed) => ({
+  id: seed,
+  url: `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${encodeURIComponent(seed)}`,
+  label: seed,
+}));
