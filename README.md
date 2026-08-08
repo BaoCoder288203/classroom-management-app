@@ -20,10 +20,15 @@ classroom-management-app/
 ## Features
 
 ### Auth
-- **Instructor:** phone number + 6-digit SMS OTP (`POST /api/auth/createAccessCode`, `validateAccessCode`)
-- **Student day-to-day login:** email OTP (`POST /api/student/loginEmail`, `validateAccessCode`) — matches the challenge student API list
-- **Account setup:** when instructor adds a student, email contains a setup link; student sets **username + password** (bcrypt hash). Username/password are stored for credentials/setup flow; daily login uses **email OTP** as in the spec routes (not a separate password-login API).
-- JWT for protected API routes; `role` (`instructor` | `student`) in token + localStorage
+- **Instructor Sign in:** phone + SMS OTP (`POST /api/auth/createAccessCode`) — requires existing instructor account
+- **Instructor Sign up:** name + phone (`POST /api/auth/instructorSignup`) creates `role: instructor` then OTP
+- **Student:** email OTP (`POST /api/student/loginEmail`) — accounts created by instructor invite/setup, no public student signup
+- JWT for protected API routes; `role` in token + localStorage
+
+### Chat media
+- GIF picker via `GET /api/chat/gifs` (Giphy if `GIPHY_API_KEY` set, else curated list)
+- Image stickers (DiceBear pack) separate from emoji panel
+- File/image upload: `POST /api/chat/upload`
 
 ### Instructor
 - Manage students (add / edit / delete) with **Role** (always `student` for new learners)
@@ -68,6 +73,8 @@ JWT_SECRET=your-secret
 FRONTEND_URL=http://localhost:5173
 # Optional absolute URL for uploaded files (production)
 # API_PUBLIC_URL=https://your-api.example.com
+# Optional Giphy key for GIF search
+# GIPHY_API_KEY=your_giphy_key
 # Firebase + Infobip + email vars...
 ```
 

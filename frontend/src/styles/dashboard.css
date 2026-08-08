@@ -433,15 +433,22 @@
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 6px 8px;
   margin-right: 6px;
   cursor: pointer;
-  font-size: 15px;
-  transition: background var(--transition);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  transition:
+    background var(--transition),
+    border-color var(--transition);
 }
 
 .btn-icon-msg:hover {
   background: var(--primary-soft);
+  border-color: rgba(15, 118, 110, 0.35);
 }
 
 .modal-footer {

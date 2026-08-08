@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import api from "../api/client";
 import socket, { getRoomId, normalizeId } from "../socket";
 import { getInitials } from "../utils/initials";
-import { QUICK_EMOJIS, STICKERS } from "../utils/chatStickers";
+import { QUICK_EMOJIS, STICKER_PACK } from "../utils/chatStickers";
 import "../styles/chat.css";
 
 function MessageBody({ m }) {
@@ -33,6 +33,15 @@ function MessageBody({ m }) {
   }
 
   if (type === "sticker") {
+    if (m.fileUrl) {
+      return (
+        <img
+          src={m.fileUrl}
+          alt={m.text || "sticker"}
+          className="chat-sticker-img"
+        />
+      );
+    }
     return <span className="chat-sticker">{m.text}</span>;
   }
 
@@ -52,11 +61,14 @@ function ChatLayout({
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
-  const [panel, setPanel] = useState(null); // emoji | sticker | gif | null
-  const [gifUrl, setGifUrl] = useState("");
+  const [panel, setPanel] = useState(null);
+  const [gifQuery, setGifQuery] = useState("");
+  const [gifs, setGifs] = useState([]);
+  const [gifsLoading, setGifsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
+  const gifTimer = useRef(null);
 
   useEffect(() => {
     if (initialSelectedId) {
@@ -119,6 +131,31 @@ function ChatLayout({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  async function loadGifs(q = "") {
+    setGifsLoading(true);
+    try {
+      const res = await api.get("/api/chat/gifs", {
+        params: q ? { q } : {},
+      });
+      setGifs(res.data.gifs || []);
+    } catch {
+      setGifs([]);
+    } finally {
+      setGifsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (panel !== "gif") return;
+    loadGifs("");
+  }, [panel]);
+
+  function onGifSearchChange(value) {
+    setGifQuery(value);
+    clearTimeout(gifTimer.current);
+    gifTimer.current = setTimeout(() => loadGifs(value.trim()), 350);
+  }
+
   function emitMessage(payload) {
     if (!selectedId || !myId) return;
     const roomId = getRoomId(myId, selectedId);
@@ -149,16 +186,21 @@ function ChatLayout({
   }
 
   function sendSticker(sticker) {
-    emitMessage({ type: "sticker", text: sticker });
+    emitMessage({
+      type: "sticker",
+      fileUrl: sticker.url,
+      text: sticker.label || sticker.id,
+    });
     setPanel(null);
   }
 
-  function sendGifUrl(e) {
-    e.preventDefault();
-    const url = gifUrl.trim();
-    if (!url) return;
-    emitMessage({ type: "gif", fileUrl: url, text: "" });
-    setGifUrl("");
+  function sendGif(gif) {
+    emitMessage({
+      type: "gif",
+      fileUrl: gif.url,
+      text: gif.title || "",
+      fileName: "gif",
+    });
     setPanel(null);
   }
 
@@ -301,31 +343,52 @@ function ChatLayout({
                 ))}
               </div>
             )}
+
             {panel === "sticker" && (
-              <div className="chat-picker">
-                {STICKERS.map((st) => (
+              <div className="chat-picker sticker-grid">
+                {STICKER_PACK.map((st) => (
                   <button
-                    key={st}
+                    key={st.id}
                     type="button"
-                    className="chat-picker-item sticker"
+                    className="chat-sticker-btn"
+                    title={st.label}
                     onClick={() => sendSticker(st)}
                   >
-                    {st}
+                    <img src={st.url} alt={st.label} />
                   </button>
                 ))}
               </div>
             )}
+
             {panel === "gif" && (
-              <form className="chat-gif-form" onSubmit={sendGifUrl}>
+              <div className="chat-gif-panel">
                 <input
-                  placeholder="Dán URL GIF (vd Giphy)"
-                  value={gifUrl}
-                  onChange={(e) => setGifUrl(e.target.value)}
+                  className="chat-gif-search"
+                  placeholder="Search GIFs..."
+                  value={gifQuery}
+                  onChange={(e) => onGifSearchChange(e.target.value)}
                 />
-                <button type="submit" className="btn-primary">
-                  Gửi GIF
-                </button>
-              </form>
+                {gifsLoading ? (
+                  <p className="chat-gif-hint">Loading...</p>
+                ) : (
+                  <div className="chat-gif-grid">
+                    {gifs.length === 0 ? (
+                      <p className="chat-gif-hint">No GIFs found</p>
+                    ) : (
+                      gifs.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          className="chat-gif-item"
+                          onClick={() => sendGif(g)}
+                        >
+                          <img src={g.preview || g.url} alt={g.title || "gif"} />
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
             <form className="chat-input-bar" onSubmit={handleSend}>
@@ -350,7 +413,7 @@ function ChatLayout({
                 <button
                   type="button"
                   className="chat-tool-btn"
-                  title="Sticker"
+                  title="Stickers"
                   onClick={() =>
                     setPanel((p) => (p === "sticker" ? null : "sticker"))
                   }
@@ -360,7 +423,7 @@ function ChatLayout({
                 <button
                   type="button"
                   className="chat-tool-btn"
-                  title="GIF URL"
+                  title="GIF"
                   onClick={() => setPanel((p) => (p === "gif" ? null : "gif"))}
                 >
                   GIF
