@@ -65,7 +65,7 @@ function StudentLessons() {
             >
               <div>
                 <div className="lesson-card-head">
-                  <b style={{ fontSize: 16 }}>{l.title}</b>
+                  <span className="lesson-card-title">{l.title}</span>
                   <span className={`status-badge ${done ? "" : "pending"}`}>
                     {done ? "Done" : "Pending"}
                   </span>

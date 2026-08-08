@@ -3,8 +3,11 @@ import "../styles/dashboard.css";
 
 function Sidebar({ items }) {
   return (
-    <div className="sidebar">
-      <div className="sidebar-logo">Classroom</div>
+    <aside className="sidebar">
+      <div className="sidebar-logo">
+        <div className="sidebar-logo-mark">C</div>
+        <span className="sidebar-logo-text">Classroom</span>
+      </div>
       {items.map((item) => (
         <NavLink
           key={item.path}
@@ -16,13 +19,13 @@ function Sidebar({ items }) {
         >
           <span>{item.label}</span>
           {item.badge > 0 && (
-            <span className="nav-badge">
+            <span className="nav-badge" key={item.badge}>
               {item.badge > 99 ? "99+" : item.badge}
             </span>
           )}
         </NavLink>
       ))}
-    </div>
+    </aside>
   );
 }
 
