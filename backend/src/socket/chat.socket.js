@@ -48,14 +48,39 @@ module.exports = function initChatSocket(io) {
 
     socket.on(
       "send_message",
-      async ({ roomId, senderId, senderRole, text, receiverId }) => {
+      async ({
+        roomId,
+        senderId,
+        senderRole,
+        text,
+        receiverId,
+        type,
+        fileUrl,
+        fileName,
+        mimeType,
+      }) => {
         try {
           if (!roomId || !senderId) return;
-          if (!text || String(text).trim() === "") return;
 
           const from = normalizeId(senderId);
           const to = normalizeId(receiverId);
           if (!to) return;
+
+          const msgType = type || "text";
+          const body = text != null ? String(text).trim() : "";
+          const url = fileUrl ? String(fileUrl).trim() : "";
+
+          // text cần nội dung; media cần url; sticker/emoji có thể chỉ text
+          if (msgType === "text" && !body) return;
+          if (
+            (msgType === "image" ||
+              msgType === "file" ||
+              msgType === "gif") &&
+            !url
+          ) {
+            return;
+          }
+          if (msgType === "sticker" && !body && !url) return;
 
           const message = {
             roomId,
@@ -63,7 +88,11 @@ module.exports = function initChatSocket(io) {
             receiverId: to,
             participants: [from, to],
             senderRole: senderRole || "",
-            text: String(text).trim(),
+            type: msgType,
+            text: body,
+            fileUrl: url,
+            fileName: fileName ? String(fileName) : "",
+            mimeType: mimeType ? String(mimeType) : "",
             timestamp: Date.now(),
           };
 

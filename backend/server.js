@@ -21,11 +21,13 @@ const io = new Server(server, {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
+app.use("/uploads", express.static(require("path").join(__dirname, "uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/instructor", instructorRoutes);
+app.use("/api/chat", require("./src/routes/chat.routes"));
 
 app.get("/", (req, res) => {
   res.send("API is running...");

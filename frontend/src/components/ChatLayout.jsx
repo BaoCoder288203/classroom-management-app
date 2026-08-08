@@ -1,7 +1,43 @@
 import { useEffect, useRef, useState } from "react";
+import api from "../api/client";
 import socket, { getRoomId, normalizeId } from "../socket";
 import { getInitials } from "../utils/initials";
+import { QUICK_EMOJIS, STICKERS } from "../utils/chatStickers";
 import "../styles/chat.css";
+
+function MessageBody({ m }) {
+  const type = m.type || "text";
+
+  if (type === "image" || type === "gif") {
+    return (
+      <div className="chat-media">
+        <a href={m.fileUrl} target="_blank" rel="noreferrer">
+          <img src={m.fileUrl} alt={m.fileName || type} className="chat-img" />
+        </a>
+        {m.text ? <p className="chat-caption">{m.text}</p> : null}
+      </div>
+    );
+  }
+
+  if (type === "file") {
+    return (
+      <a
+        className="chat-file-link"
+        href={m.fileUrl}
+        target="_blank"
+        rel="noreferrer"
+      >
+        📎 {m.fileName || "Download file"}
+      </a>
+    );
+  }
+
+  if (type === "sticker") {
+    return <span className="chat-sticker">{m.text}</span>;
+  }
+
+  return <>{m.text}</>;
+}
 
 function ChatLayout({
   myId,
@@ -10,25 +46,43 @@ function ChatLayout({
   title = "All Message",
   showSearch = true,
   emptyHint = "No conversations",
+  initialSelectedId = null,
 }) {
   const [selectedId, setSelectedId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
+  const [panel, setPanel] = useState(null); // emoji | sticker | gif | null
+  const [gifUrl, setGifUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef(null);
+  const fileRef = useRef(null);
 
   useEffect(() => {
+    if (initialSelectedId) {
+      setSelectedId(normalizeId(initialSelectedId));
+    }
+  }, [initialSelectedId]);
+
+  useEffect(() => {
+    if (initialSelectedId) return;
     if (!selectedId && conversations.length > 0) {
       setSelectedId(conversations[0].id);
     }
+  }, [conversations, selectedId, initialSelectedId]);
+
+  useEffect(() => {
     if (
       selectedId &&
       conversations.length > 0 &&
       !conversations.some((c) => c.id === selectedId)
     ) {
-      setSelectedId(conversations[0].id);
+      if (initialSelectedId && normalizeId(initialSelectedId) === selectedId) {
+        return;
+      }
+      setSelectedId(conversations[0]?.id || null);
     }
-  }, [conversations, selectedId]);
+  }, [conversations, selectedId, initialSelectedId]);
 
   useEffect(() => {
     if (!myId || !selectedId) {
@@ -65,18 +119,74 @@ function ChatLayout({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function handleSend(e) {
-    e.preventDefault();
-    if (!text.trim() || !selectedId || !myId) return;
+  function emitMessage(payload) {
+    if (!selectedId || !myId) return;
     const roomId = getRoomId(myId, selectedId);
     socket.emit("send_message", {
       roomId,
       senderId: myId,
       senderRole: myRole,
       receiverId: selectedId,
-      text: text.trim(),
+      type: "text",
+      text: "",
+      fileUrl: "",
+      fileName: "",
+      mimeType: "",
+      ...payload,
     });
+  }
+
+  function handleSend(e) {
+    e.preventDefault();
+    if (!text.trim() || !selectedId || !myId) return;
+    emitMessage({ type: "text", text: text.trim() });
     setText("");
+  }
+
+  function sendEmoji(emoji) {
+    emitMessage({ type: "text", text: emoji });
+    setPanel(null);
+  }
+
+  function sendSticker(sticker) {
+    emitMessage({ type: "sticker", text: sticker });
+    setPanel(null);
+  }
+
+  function sendGifUrl(e) {
+    e.preventDefault();
+    const url = gifUrl.trim();
+    if (!url) return;
+    emitMessage({ type: "gif", fileUrl: url, text: "" });
+    setGifUrl("");
+    setPanel(null);
+  }
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !selectedId) return;
+
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await api.post("/api/chat/upload", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const data = res.data;
+      emitMessage({
+        type: data.type || "file",
+        fileUrl: data.fileUrl,
+        fileName: data.fileName,
+        mimeType: data.mimeType,
+        text: "",
+      });
+    } catch (err) {
+      alert(err.response?.data?.message || "Upload thất bại");
+    } finally {
+      setUploading(false);
+    }
   }
 
   const filteredConversations = conversations.filter((c) => {
@@ -169,14 +279,102 @@ function ChatLayout({
                     normalizeId(m.senderId) === normalizeId(myId)
                       ? "mine"
                       : "theirs"
-                  }`}
+                  } ${m.type === "sticker" ? "bubble-sticker" : ""}`}
                 >
-                  {m.text}
+                  <MessageBody m={m} />
                 </div>
               ))}
               <div ref={bottomRef} />
             </div>
+
+            {panel === "emoji" && (
+              <div className="chat-picker">
+                {QUICK_EMOJIS.map((em) => (
+                  <button
+                    key={em}
+                    type="button"
+                    className="chat-picker-item"
+                    onClick={() => sendEmoji(em)}
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+            )}
+            {panel === "sticker" && (
+              <div className="chat-picker">
+                {STICKERS.map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    className="chat-picker-item sticker"
+                    onClick={() => sendSticker(st)}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+            )}
+            {panel === "gif" && (
+              <form className="chat-gif-form" onSubmit={sendGifUrl}>
+                <input
+                  placeholder="Dán URL GIF (vd Giphy)"
+                  value={gifUrl}
+                  onChange={(e) => setGifUrl(e.target.value)}
+                />
+                <button type="submit" className="btn-primary">
+                  Gửi GIF
+                </button>
+              </form>
+            )}
+
             <form className="chat-input-bar" onSubmit={handleSend}>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+                hidden
+                onChange={handleFileChange}
+              />
+              <div className="chat-tools">
+                <button
+                  type="button"
+                  className="chat-tool-btn"
+                  title="Emoji"
+                  onClick={() =>
+                    setPanel((p) => (p === "emoji" ? null : "emoji"))
+                  }
+                >
+                  😀
+                </button>
+                <button
+                  type="button"
+                  className="chat-tool-btn"
+                  title="Sticker"
+                  onClick={() =>
+                    setPanel((p) => (p === "sticker" ? null : "sticker"))
+                  }
+                >
+                  ⭐
+                </button>
+                <button
+                  type="button"
+                  className="chat-tool-btn"
+                  title="GIF URL"
+                  onClick={() => setPanel((p) => (p === "gif" ? null : "gif"))}
+                >
+                  GIF
+                </button>
+                <button
+                  type="button"
+                  className="chat-tool-btn"
+                  title="File / Ảnh"
+                  disabled={uploading}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  {uploading ? "…" : "📎"}
+                </button>
+              </div>
               <input
                 placeholder="Reply message..."
                 value={text}

@@ -1,6 +1,6 @@
 # Classroom Management App
 
-Real-time classroom tool for instructors and students: student management, lesson assignment, and Socket.io chat.
+Real-time classroom tool for instructors and students: student management, lesson assignment, and Socket.io chat (text + image/file/emoji/sticker/GIF).
 
 **Stack:** React (Vite) · Node.js / Express · Firebase (Firestore) · Socket.io · Infobip (SMS) · Nodemailer (email)
 
@@ -8,51 +8,50 @@ Real-time classroom tool for instructors and students: student management, lesso
 
 ```
 classroom-management-app/
-├── backend/          # Express API + Socket.io
+├── backend/          # Express API + Socket.io + local chat uploads
 │   ├── server.js
+│   ├── uploads/      # chat files (gitignored)
 │   └── src/
-│       ├── controllers/
-│       ├── routes/
-│       ├── middleware/
-│       ├── services/
-│       ├── socket/
-│       └── config/
 ├── frontend/         # React + Vite SPA
 │   └── src/
-│       ├── pages/
-│       ├── components/
-│       ├── context/
-│       └── styles/
-└── docs/
-    └── screenshots/  # App screenshots for submission
+└── README.md
 ```
 
 ## Features
 
 ### Auth
 - **Instructor:** phone number + 6-digit SMS OTP (`POST /api/auth/createAccessCode`, `validateAccessCode`)
-- **Student:** email OTP (`POST /api/student/loginEmail`, `validateAccessCode`)
-- Account setup via emailed link (`/setup-account?token=...`) with username + hashed password
-- JWT for protected API routes
+- **Student day-to-day login:** email OTP (`POST /api/student/loginEmail`, `validateAccessCode`) — matches the challenge student API list
+- **Account setup:** when instructor adds a student, email contains a setup link; student sets **username + password** (bcrypt hash). Username/password are stored for credentials/setup flow; daily login uses **email OTP** as in the spec routes (not a separate password-login API).
+- JWT for protected API routes; `role` (`instructor` | `student`) in token + localStorage
 
 ### Instructor
-- Manage students (add / edit / delete)
+- Manage students (add / edit / delete) with **Role** (always `student` for new learners)
+- Student table shows **account status** and **lesson status** (pending/done summary)
+- **Message** shortcut per student → opens chat focused on that student
 - Assign lessons to one or more students
-- View assigned lessons and statuses
-- 1-1 real-time chat with students (Socket.io + Firestore history)
+- 1-1 real-time chat (Socket.io + Firestore); media: text, image, file, emoji, sticker, GIF URL
 
 ### Student
 - View assigned lessons and mark as done
-- Edit profile (name, username, phone; email is read-only)
-- Chat with instructor
+- Edit profile (**name, username, phone**)
+- Chat with instructors (same media types)
+
+### Why student email is read-only on profile
+
+Student **email is the login identity** for email OTP and is stored on messages as a **room participant** (`participants` / room id with instructor phone). Allowing email changes from profile would:
+
+1. Break login until the code in Firebase and JWT identifier are migrated consistently  
+2. Orphan past chat history under the previous email / room id  
+
+To keep sessions and chat history stable, profile update **does not allow changing email**. Instructors can still update a student's email via **Edit Student** if operationally required (with care).
 
 ## Setup
 
 ### Prerequisites
-- Node.js 18+
-- Firebase project + service account JSON
-- Infobip (or compatible) SMS credentials
-- SMTP / Gmail App Password for email
+- Node.js 18+ recommended  
+- Firebase project + `serviceAccountKey.json`  
+- Infobip (or SMS provider) + SMTP for email  
 
 ### Backend
 
@@ -67,17 +66,17 @@ Create `backend/.env` (do not commit):
 PORT=3001
 JWT_SECRET=your-secret
 FRONTEND_URL=http://localhost:5173
-# Firebase + Infobip + email vars as in your existing .env
+# Optional absolute URL for uploaded files (production)
+# API_PUBLIC_URL=https://your-api.example.com
+# Firebase + Infobip + email vars...
 ```
-
-Place Firebase `serviceAccountKey.json` (gitignored) as required by the backend config.
 
 ```bash
 npm run dev
-# or: node server.js
 ```
 
-API default: `http://localhost:3001`
+API: `http://localhost:3001`  
+Static uploads: `http://localhost:3001/uploads/chat/...`
 
 ### Frontend
 
@@ -86,14 +85,9 @@ cd frontend
 npm install
 ```
 
-Create `frontend/.env`:
-
 ```env
 VITE_API_URL=http://localhost:3001
-VITE_INSTRUCTOR_PHONE=+84xxxxxxxxx
 ```
-
-`VITE_INSTRUCTOR_PHONE` must match the instructor phone used at login (same format as JWT identifier) so students join the correct chat room.
 
 ```bash
 npm run dev
@@ -119,25 +113,10 @@ App: `http://localhost:5173`
 | GET | `/api/instructor/lessons` | instructor JWT |
 | POST | `/api/instructor/assignLesson` | instructor JWT |
 | GET/PUT/DELETE | `/api/instructor/student/:phone` | instructor JWT |
+| POST | `/api/chat/upload` | any JWT (multipart file) |
 
-Socket events: `join_room`, `leave_room`, `send_message`, `chat_history`, `receive_message`.  
-Room id = sorted pair of instructor phone + student email.
+Socket: `join_room`, `join_user`, `send_message` (`type`, `text`, `fileUrl`, …), `chat_history`, `receive_message`.
 
 ## Screenshots
 
-Add captures under `docs/screenshots/` and link them here after you run the app:
-
-| Screen | File |
-|--------|------|
-| Login | `docs/screenshots/login.png` |
-| Manage students | `docs/screenshots/students.png` |
-| Assign lessons | `docs/screenshots/lessons.png` |
-| Student lessons | `docs/screenshots/my-lessons.png` |
-| Chat | `docs/screenshots/chat.png` |
-| Setup account | `docs/screenshots/setup-account.png` |
-
-Example:
-
-```md
-![Login](docs/screenshots/login.png)
-```
+Screenshots for submission are **not stored in this repo**. They will be shared with HR via a Google Drive link when submitting the public GitHub URL.
