@@ -109,7 +109,6 @@ h1 {
 }
 
 .page-enter {
-  /* Chỉ opacity — transform sẽ làm position:fixed của modal sai khung */
   animation: fade-in 0.28s ease both;
 }
 

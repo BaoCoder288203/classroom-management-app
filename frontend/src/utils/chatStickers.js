@@ -1,4 +1,3 @@
-/* Unicode emojis for emoji panel only */
 export const QUICK_EMOJIS = [
   "😀",
   "😂",
@@ -18,7 +17,6 @@ export const QUICK_EMOJIS = [
   "✅",
 ];
 
-/** Image stickers (DiceBear fun-emoji) — not plain Unicode */
 export const STICKER_PACK = [
   "happy",
   "cool",
