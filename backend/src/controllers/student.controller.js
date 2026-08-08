@@ -61,6 +61,8 @@ async function loginEmail(req, res) {
       accessCodeExpiry: Date.now() + 10 * 60 * 1000,
     });
 
+    console.log("[OTP]", normalizedEmail, code);
+
     await sendEmail(
       normalizedEmail,
       "Mã đăng nhập của bạn",
@@ -68,9 +70,13 @@ async function loginEmail(req, res) {
        <p>Mã có hiệu lực trong 10 phút.</p>`
     );
 
+    const debugOtp =
+      process.env.OTP_DEBUG === "false" ? {} : { debugOtp: code };
+
     return res.status(200).json({
       success: true,
       message: "Đã gửi mã truy cập qua email",
+      ...debugOtp,
     });
   } catch (error) {
     console.log("loginEmail error:", error);
