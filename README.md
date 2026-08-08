@@ -14,6 +14,7 @@ classroom-management-app/
 │   └── src/
 ├── frontend/         # React + Vite SPA
 │   └── src/
+├── ScreenshotsOfMyApplication/  # Instructor + Student UI captures
 └── README.md
 ```
 
@@ -152,4 +153,11 @@ Socket: `join_room`, `join_user`, `send_message` (`type`, `text`, `fileUrl`, …
 
 ## Screenshots
 
-Screenshots for submission are **not stored in this repo**. They will be shared with HR via a Google Drive link when submitting the public GitHub URL.
+App screenshots live in [`ScreenshotsOfMyApplication/`](./ScreenshotsOfMyApplication/):
+
+| Role | Folder |
+|------|--------|
+| Instructor | [`ScreenshotsOfMyApplication/Instructor/`](./ScreenshotsOfMyApplication/Instructor/) |
+| Student | [`ScreenshotsOfMyApplication/student/`](./ScreenshotsOfMyApplication/student/) |
+
+Open those folders on GitHub to browse UI captures (manage students, lessons, chat, profile, OTP, etc.).
