@@ -1,10 +1,20 @@
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import "../styles/auth.css";
 
 const OTP_LEN = 6;
 
 function emptyDigits() {
   return Array(OTP_LEN).fill("");
+}
+
+function showDebugOtpToast(debugOtp) {
+  if (!debugOtp) return;
+  toast.success(`Mã OTP (demo): ${debugOtp}`, {
+    duration: 20000,
+    position: "top-right",
+    id: `otp-${debugOtp}`,
+  });
 }
 
 function AuthForm({
@@ -74,10 +84,11 @@ function AuthForm({
 
     setLoading(true);
     try {
-      await onSubmitIdentifier(value.trim(), {
+      const result = await onSubmitIdentifier(value.trim(), {
         name: name.trim(),
         authMode,
       });
+      showDebugOtpToast(result?.debugOtp);
       setDigits(emptyDigits());
       setStep("otp");
     } catch (err) {
@@ -201,7 +212,8 @@ function AuthForm({
     e.preventDefault();
     setError("");
     try {
-      await onResend();
+      const result = await onResend();
+      showDebugOtpToast(result?.debugOtp);
       resetOtpBoxes();
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Gửi lại thất bại");

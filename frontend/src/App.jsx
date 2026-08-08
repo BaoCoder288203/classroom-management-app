@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
@@ -15,6 +16,16 @@ import StudentProfile from "./pages/student/StudentProfile";
 function App() {
   return (
     <AuthProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 20000,
+          style: {
+            fontFamily: "inherit",
+            fontSize: "14px",
+          },
+        }}
+      />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
