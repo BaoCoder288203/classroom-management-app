@@ -11,6 +11,7 @@ function Login() {
 
   const [view, setView] = useState("choose");
   const [identifier, setIdentifier] = useState("");
+  const [authMode, setAuthMode] = useState("signin");
 
   useEffect(() => {
     if (!user) return;
@@ -36,11 +37,12 @@ function Login() {
               className="auth-role-card"
               onClick={() => {
                 setIdentifier("");
+                setAuthMode("signin");
                 setView("instructor");
               }}
             >
               <strong>Instructor</strong>
-              <span>Phone OTP · manage students & lessons</span>
+              <span>Phone OTP · sign in or sign up</span>
             </button>
             <button
               type="button"
@@ -51,7 +53,7 @@ function Login() {
               }}
             >
               <strong>Student</strong>
-              <span>Email OTP · lessons, chat & profile</span>
+              <span>Email OTP · invited by instructor</span>
             </button>
           </div>
         </div>
@@ -63,15 +65,25 @@ function Login() {
     return (
       <AuthForm
         mode="phone"
+        authMode={authMode}
+        onAuthModeChange={setAuthMode}
         onBack={() => {
           setIdentifier("");
+          setAuthMode("signin");
           setView("choose");
         }}
-        onSubmitIdentifier={async (phoneNumber) => {
+        onSubmitIdentifier={async (phoneNumber, meta) => {
           setIdentifier(phoneNumber);
-          await api.post("/api/auth/createAccessCode", {
-            phoneNumber,
-          });
+          if (meta?.authMode === "signup") {
+            await api.post("/api/auth/instructorSignup", {
+              phoneNumber,
+              name: meta.name || "",
+            });
+          } else {
+            await api.post("/api/auth/createAccessCode", {
+              phoneNumber,
+            });
+          }
         }}
         onSubmitOtp={async (accessCode) => {
           const res = await api.post("/api/auth/validateAccessCode", {
@@ -79,13 +91,11 @@ function Login() {
             accessCode,
           });
           const { token, role, phone } = res.data;
-          const finalRole = role || "instructor";
-          login(token, finalRole, phone || identifier);
-          navigate(
-            finalRole === "instructor"
-              ? "/instructor/students"
-              : "/student/lessons"
-          );
+          if (role !== "instructor") {
+            throw new Error("Tài khoản không phải instructor");
+          }
+          login(token, role, phone || identifier);
+          navigate("/instructor/students");
         }}
         onResend={async () => {
           await api.post("/api/auth/createAccessCode", {
