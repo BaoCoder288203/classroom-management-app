@@ -24,6 +24,8 @@ classroom-management-app/
 - **Instructor Sign up:** name + phone (`POST /api/auth/instructorSignup`) creates `role: instructor` then OTP
 - **Student:** email OTP (`POST /api/student/loginEmail`) — accounts created by instructor invite/setup, no public student signup
 - JWT for protected API routes; `role` in token + localStorage
+- **CORS:** API + Socket.io allow only `FRONTEND_URL`
+- **OTP rate limit:** gửi mã max 5 / 15 phút; verify max 10 / 15 phút (theo IP)
 
 ### Chat media
 - GIF picker via `GET /api/chat/gifs` (Giphy if `GIPHY_API_KEY` set, else curated list)

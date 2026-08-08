@@ -14,9 +14,13 @@ const {
   verifyToken,
   requireRole,
 } = require("../middleware/auth.middleware");
+const {
+  otpSendLimiter,
+  otpVerifyLimiter,
+} = require("../middleware/rateLimit.middleware");
 
-router.post("/loginEmail", loginEmail);
-router.post("/validateAccessCode", validateAccessCode);
+router.post("/loginEmail", otpSendLimiter, loginEmail);
+router.post("/validateAccessCode", otpVerifyLimiter, validateAccessCode);
 router.post("/setupAccount", setupAccount);
 
 router.get("/myLessons", verifyToken, requireRole("student"), getMyLessons);
