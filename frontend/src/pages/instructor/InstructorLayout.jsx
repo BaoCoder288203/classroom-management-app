@@ -1,6 +1,7 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Sidebar from "../../components/Sidebar";
+import { getInitials } from "../../utils/initials";
 import "../../styles/dashboard.css";
 
 const sidebarItems = [
@@ -12,6 +13,8 @@ const sidebarItems = [
 function InstructorLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const label = user?.identifier || "Instructor";
 
   function handleLogout() {
     logout();
@@ -23,15 +26,17 @@ function InstructorLayout() {
       <Sidebar items={sidebarItems} />
       <div className="main-content">
         <div className="topbar">
-          <span className="topbar-user">
-            {user?.identifier || "Instructor"}
-          </span>
-          <div className="topbar-avatar" />
+          <span className="topbar-user">{label}</span>
+          <div className="topbar-avatar" title={label}>
+            {getInitials(label)}
+          </div>
           <button type="button" className="btn-logout" onClick={handleLogout}>
             Logout
           </button>
         </div>
-        <Outlet />
+        <div className="page-enter" key={location.pathname}>
+          <Outlet />
+        </div>
       </div>
     </div>
   );

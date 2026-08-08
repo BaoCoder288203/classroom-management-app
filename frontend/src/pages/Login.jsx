@@ -25,29 +25,35 @@ function Login() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <h1 className="auth-title">Classroom App</h1>
+          <div className="auth-brand">
+            <div className="auth-brand-mark">C</div>
+            <h1 className="auth-brand-name">Classroom</h1>
+          </div>
           <p className="auth-subtitle">Choose how you want to sign in</p>
-          <button
-            type="button"
-            className="auth-button"
-            style={{ marginBottom: 12 }}
-            onClick={() => {
-              setIdentifier("");
-              setView("instructor");
-            }}
-          >
-            Sign in as Instructor
-          </button>
-          <button
-            type="button"
-            className="auth-button secondary"
-            onClick={() => {
-              setIdentifier("");
-              setView("student");
-            }}
-          >
-            Sign in as Student
-          </button>
+          <div className="auth-role-grid">
+            <button
+              type="button"
+              className="auth-role-card"
+              onClick={() => {
+                setIdentifier("");
+                setView("instructor");
+              }}
+            >
+              <strong>Instructor</strong>
+              <span>Phone OTP · manage students & lessons</span>
+            </button>
+            <button
+              type="button"
+              className="auth-role-card"
+              onClick={() => {
+                setIdentifier("");
+                setView("student");
+              }}
+            >
+              <strong>Student</strong>
+              <span>Email OTP · lessons, chat & profile</span>
+            </button>
+          </div>
         </div>
       </div>
     );

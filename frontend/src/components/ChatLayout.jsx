@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import socket, { getRoomId, normalizeId } from "../socket";
+import { getInitials } from "../utils/initials";
 import "../styles/chat.css";
 
 function ChatLayout({
@@ -87,6 +88,8 @@ function ChatLayout({
     );
   });
 
+  const selected = conversations.find((c) => c.id === selectedId);
+
   return (
     <div className="chat-layout">
       <div className="chat-sidebar">
@@ -103,7 +106,13 @@ function ChatLayout({
         </div>
         <div className="conversation-list">
           {filteredConversations.length === 0 ? (
-            <p style={{ color: "#9ca3af", fontSize: 13, padding: "0 8px" }}>
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontSize: 13,
+                padding: "8px 10px",
+              }}
+            >
               {emptyHint}
             </p>
           ) : (
@@ -120,7 +129,9 @@ function ChatLayout({
                 role="button"
                 tabIndex={0}
               >
-                <div className="conversation-avatar" />
+                <div className="conversation-avatar">
+                  {getInitials(c.name || c.id)}
+                </div>
                 <div>
                   <p className="conversation-name">{c.name}</p>
                   <p className="conversation-preview">
@@ -136,9 +147,18 @@ function ChatLayout({
       <div className="chat-panel">
         {selectedId ? (
           <>
+            <div className="chat-panel-header">
+              {selected?.name || selectedId}
+            </div>
             <div className="chat-messages">
               {messages.length === 0 && (
-                <p style={{ color: "#9ca3af", fontSize: 13, margin: 0 }}>
+                <p
+                  style={{
+                    color: "var(--text-muted)",
+                    fontSize: 13,
+                    margin: 0,
+                  }}
+                >
                   No messages yet
                 </p>
               )}
@@ -158,7 +178,7 @@ function ChatLayout({
             </div>
             <form className="chat-input-bar" onSubmit={handleSend}>
               <input
-                placeholder="Reply message"
+                placeholder="Reply message..."
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
@@ -167,9 +187,12 @@ function ChatLayout({
           </>
         ) : (
           <div className="chat-empty">
-            {conversations.length === 0
-              ? emptyHint
-              : "Select a conversation to start"}
+            <div className="chat-empty-icon">C</div>
+            <span>
+              {conversations.length === 0
+                ? emptyHint
+                : "Select a conversation to start"}
+            </span>
           </div>
         )}
       </div>
